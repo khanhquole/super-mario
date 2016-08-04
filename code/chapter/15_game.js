@@ -27,6 +27,8 @@ function Level(plan) {
         fieldType = "wall";
       else if (ch == "!")
         fieldType = "lava";
+      else if (ch == "?")
+        fieldType = "theDead";
       gridLine.push(fieldType);
     }
     this.grid.push(gridLine);
@@ -55,7 +57,8 @@ Vector.prototype.times = function(factor) {
 var actorChars = {
   "@": Player,
   "o": Coin,
-  "=": Lava, "|": Lava, "v": Lava
+  "=": Lava, "|": Lava, "v": Lava,
+  "?": TheDead
 };
 
 function Player(pos) {
@@ -78,6 +81,13 @@ function Lava(pos, ch) {
   }
 }
 Lava.prototype.type = "lava";
+
+function TheDead(pos){
+  this.pos = pos;
+  this.size = new Vector(1,1);
+  this.speed = new Vector(10,0);
+}
+TheDead.prototype.type = "theDead";
 
 function Coin(pos) {
   this.basePos = this.pos = pos.plus(new Vector(0.2, 0.1));
@@ -221,6 +231,16 @@ Lava.prototype.act = function(step, level) {
     this.speed = this.speed.times(-1);
 };
 
+TheDead.prototype.act = function(step, level) {
+  var newPos = this.pos.plus(this.speed.times(step));
+  if (!level.obstacleAt(newPos, this.size))
+    this.pos = newPos;
+  else if (this.repeatPos)
+    this.pos = this.repeatPos;
+  else
+    this.speed = this.speed.times(-1);
+};
+
 var wobbleSpeed = 8, wobbleDist = 0.07;
 
 Coin.prototype.act = function(step) {
@@ -280,7 +300,7 @@ Player.prototype.act = function(step, level, keys) {
 };
 
 Level.prototype.playerTouched = function(type, actor) {
-  if (type == "lava" && this.status == null) {
+  if (type == "lava" || type == "theDead" && this.status == null) {
     this.status = "lost";
     this.finishDelay = 1;
   } else if (type == "coin") {
